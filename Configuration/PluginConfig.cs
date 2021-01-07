@@ -7,6 +7,7 @@ namespace FocusMod.Configuration {
 		public static PluginConfig Instance { get; set; }
 
 		public virtual float MinimumDowntime { get; set; } = 3f;
+		public virtual float LeadTime { get; set; } = 1.5f;
 		public virtual bool IgnoreWalls { get; set; } = false;
 		public virtual bool IgnoreBombs { get; set; } = false;
 

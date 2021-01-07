@@ -33,7 +33,6 @@ namespace FocusMod {
 		}
 
 		#region BSIPA Config
-		//Uncomment to use BSIPA's config
 		[Init]
 		public void InitWithConfig(Config conf)
 		{

@@ -1,8 +1,13 @@
 ﻿<settings-container>
 	<horizontal horizontal-fit="PreferredSize">
 		<slider-setting apply-on-change="true" value="MinimumDowntime" text="Minimum Downtime"
-						hover-hint="The least amount of downtime there has to be for the HUD to hide"
+						hover-hint="The least amount of downtime there has to be for the HUD to show (0 = Off)"
 						min="0" max="5" increment="0.1"></slider-setting>
+	</horizontal>
+	<horizontal horizontal-fit="PreferredSize">
+		<slider-setting apply-on-change="true" value="LeadTime" text="Lead Time"
+						hover-hint="Hide the HUD when notes are about to approach within this amount of seconds"
+						min="1" max="3" increment="0.1"></slider-setting>
 	</horizontal>
 	<horizontal horizontal-fit="PreferredSize">
 		<checkbox-setting apply-on-change="true" value="IgnoreWalls" text="Ignore Walls"

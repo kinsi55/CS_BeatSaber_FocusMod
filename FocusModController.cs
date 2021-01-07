@@ -46,9 +46,10 @@ namespace FocusMod {
 				return;
 			}
 
+			isVisible = true;
+			checkInterval = 0;
 			audioTimeSyncController = Resources.FindObjectsOfTypeAll<AudioTimeSyncController>().LastOrDefault();
 			scoreUIController = Resources.FindObjectsOfTypeAll<ScoreUIController>().LastOrDefault();
-			isVisible = true;
 
 
 			float lastObjectTime = 0f;
@@ -79,7 +80,10 @@ namespace FocusMod {
 					continue;
 
 				if(beatmapObject.time - lastObjectTime > Configuration.PluginConfig.Instance.MinimumDowntime)
-					safeTimespans.Add(new SafeTimespan(lastObjectTime, beatmapObject.time - Configuration.PluginConfig.Instance.MinimumDowntime));
+					safeTimespans.Add(new SafeTimespan(
+						lastObjectTime, 
+						beatmapObject.time - Math.Min(Configuration.PluginConfig.Instance.MinimumDowntime, Configuration.PluginConfig.Instance.LeadTime)
+					));
 
 				lastObjectTime = beatmapObject.time;
 			}
