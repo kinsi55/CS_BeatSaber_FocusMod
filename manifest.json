@@ -1,0 +1,14 @@
+﻿{
+  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+  "id": "FocusMod",
+  "name": "FocusMod",
+  "author": "Kinsi55",
+  "version": "0.0.1",
+  "description": "Stops you from looking at your accuracy when you shouldnt",
+  "gameVersion": "1.12.2",
+	"dependsOn": {
+		"BSIPA": "^4.0.5",
+		"BeatSaberMarkupLanguage": "^1.4.0"
+	},
+  "features": []
+}

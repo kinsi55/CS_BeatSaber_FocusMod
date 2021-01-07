@@ -1,0 +1,17 @@
+﻿<settings-container>
+	<horizontal horizontal-fit="PreferredSize">
+		<slider-setting apply-on-change="true" value="MinimumDowntime" text="Minimum Downtime"
+						hover-hint="The least amount of downtime there has to be for the HUD to hide"
+						min="0" max="5" increment="0.1"></slider-setting>
+	</horizontal>
+	<horizontal horizontal-fit="PreferredSize">
+		<checkbox-setting apply-on-change="true" value="IgnoreWalls" text="Ignore Walls"
+						hover-hint="Should walls in the middle two lines cause the the HUD to hide?"
+						></checkbox-setting>
+	</horizontal>
+	<horizontal horizontal-fit="PreferredSize">
+		<checkbox-setting apply-on-change="true" value="IgnoreBombs" text="Ignore Bombs"
+						hover-hint="Should bombs cause the the HUD to hide?"
+						></checkbox-setting>
+	</horizontal>
+</settings-container>
