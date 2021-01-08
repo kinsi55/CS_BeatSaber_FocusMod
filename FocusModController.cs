@@ -133,7 +133,7 @@ namespace FocusMod {
 
 			// Doing it via reflection so I dont need to ref SS
 			ReplayPlayer = AccessTools.TypeByName("ScoreSaber.ReplayPlayer");
-			ReplayPlayer_playbackEnabled = ReplayPlayer.GetProperty("playbackEnabled", BindingFlags.Public | BindingFlags.Instance);
+			ReplayPlayer_playbackEnabled = ReplayPlayer?.GetProperty("playbackEnabled", BindingFlags.Public | BindingFlags.Instance);
 		}
 		/// <summary>
 		/// Only ever called once on the first frame the script is Enabled. Start is called after any other script's Awake() and before Update().
