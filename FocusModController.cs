@@ -19,11 +19,12 @@ namespace FocusMod {
 	/// </summary>
 	public class FocusModController : MonoBehaviour {
 		public static FocusModController Instance { get; private set; }
-
-		FieldInfo audioTimeSyncController_songTime;
+		
 		public AudioTimeSyncController audioTimeSyncController;
 		ScoreUIController scoreUIController;
-		public float songTime = 0f;
+
+		Type ReplayPlayer = null;
+		PropertyInfo ReplayPlayer_playbackEnabled = null;
 
 		struct SafeTimespan {
 			public float start;
@@ -36,18 +37,29 @@ namespace FocusMod {
 				//this.duration = end - start;
 			}
 		}
-		List<SafeTimespan> safeTimespans = new List<SafeTimespan>(1024);
+		List<SafeTimespan> safeTimespans = new List<SafeTimespan>(128);
+
+		public void reset() {
+			scoreUIController = null;
+			isVisible = true;
+			checkInterval = 0;
+
+			safeTimespans.Clear();
+		}
 
 		public void prepareSong(IReadOnlyList<IReadonlyBeatmapLineData> beatmapLinesData) {
-			safeTimespans.Clear();
-
 			if(Configuration.PluginConfig.Instance.MinimumDowntime == 0f) {
 				scoreUIController = null;
 				return;
 			}
 
-			isVisible = true;
-			checkInterval = 0;
+			if(ReplayPlayer != null && ReplayPlayer_playbackEnabled != null) {
+				var x = ((MonoBehaviour)Resources.FindObjectsOfTypeAll(ReplayPlayer).LastOrDefault());
+
+				if(x?.isActiveAndEnabled == true && (bool)ReplayPlayer_playbackEnabled.GetValue(x) == true)
+					return;
+			}
+
 			audioTimeSyncController = Resources.FindObjectsOfTypeAll<AudioTimeSyncController>().LastOrDefault();
 			scoreUIController = Resources.FindObjectsOfTypeAll<ScoreUIController>().LastOrDefault();
 
@@ -55,6 +67,16 @@ namespace FocusMod {
 			float lastObjectTime = 0f;
 
 			var sortedObjects = beatmapLinesData.SelectMany(x => x.beatmapObjectsData).OrderBy(x => x.time);
+
+			void checkAndAdd(float objectTime, bool force = false) {
+				if(force || objectTime - lastObjectTime > Configuration.PluginConfig.Instance.MinimumDowntime)
+					safeTimespans.Add(new SafeTimespan(
+						lastObjectTime,
+						force ? objectTime : objectTime - Math.Min(Configuration.PluginConfig.Instance.MinimumDowntime, Configuration.PluginConfig.Instance.LeadTime)
+					));
+
+				lastObjectTime = objectTime;
+			};
 
 			foreach(var beatmapObject in sortedObjects) {
 				if(beatmapObject.beatmapObjectType == BeatmapObjectType.Obstacle) {
@@ -79,14 +101,10 @@ namespace FocusMod {
 				if(lastObjectTime == beatmapObject.time)
 					continue;
 
-				if(beatmapObject.time - lastObjectTime > Configuration.PluginConfig.Instance.MinimumDowntime)
-					safeTimespans.Add(new SafeTimespan(
-						lastObjectTime, 
-						beatmapObject.time - Math.Min(Configuration.PluginConfig.Instance.MinimumDowntime, Configuration.PluginConfig.Instance.LeadTime)
-					));
-
-				lastObjectTime = beatmapObject.time;
+				checkAndAdd(beatmapObject.time);
 			}
+
+			checkAndAdd(audioTimeSyncController.songLength, true);
 
 #if DEBUG
 			Plugin.Log.Notice("Safe timespans in this song:");
@@ -113,7 +131,9 @@ namespace FocusMod {
 			Instance = this;
 			Plugin.Log?.Debug($"{name}: Awake()");
 
-			audioTimeSyncController_songTime = typeof(AudioTimeSyncController).GetField("_songTime", BindingFlags.Instance | BindingFlags.NonPublic);
+			// Doing it via reflection so I dont need to ref SS
+			ReplayPlayer = AccessTools.TypeByName("ScoreSaber.ReplayPlayer");
+			ReplayPlayer_playbackEnabled = ReplayPlayer.GetProperty("playbackEnabled", BindingFlags.Public | BindingFlags.Instance);
 		}
 		/// <summary>
 		/// Only ever called once on the first frame the script is Enabled. Start is called after any other script's Awake() and before Update().
@@ -135,16 +155,14 @@ namespace FocusMod {
 		byte checkInterval = 0;
 		bool isVisible = false;
 		private void LateUpdate() {
-			if(scoreUIController == null || audioTimeSyncController_songTime == null || audioTimeSyncController == null)
+			if(scoreUIController == null || audioTimeSyncController == null)
 				return;
 			// No need to do the check every frame
 			if(checkInterval++ % 3 != 0)
 				return;
 
-			this.songTime = (float)audioTimeSyncController_songTime.GetValue(audioTimeSyncController);
-
 			foreach(var x in safeTimespans) {
-				if(x.start <= songTime && x.end >= songTime) {
+				if(x.start <= audioTimeSyncController.songTime && x.end >= audioTimeSyncController.songTime) {
 					if(!isVisible)
 						scoreUIController.gameObject.SetActive(isVisible = true);
 					return;

@@ -48,6 +48,12 @@ namespace FocusMod {
 
 			harmony = new Harmony("Kinsi55.BeatSaber.FocusMod");
 			harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+			SceneManager.activeSceneChanged += OnActiveSceneChanged;
+		}
+		public void OnActiveSceneChanged(Scene oldScene, Scene newScene) {
+			if(newScene.name != "GameCore")
+				FocusModController.Instance.reset();
 		}
 
 		[OnExit]
