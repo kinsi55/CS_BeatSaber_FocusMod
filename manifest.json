@@ -1,14 +1,20 @@
 ﻿{
-  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
-  "id": "FocusMod",
-  "name": "FocusMod",
-  "author": "Kinsi55",
-  "version": "0.0.3",
-  "description": "Stops you from looking at your accuracy when you shouldnt",
-  "gameVersion": "1.12.2",
+	"$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+	"id": "FocusMod",
+	"name": "FocusMod",
+	"author": "Kinsi55",
+	"version": "0.1.0",
+	"description": "Stops you from looking at your accuracy when you shouldnt",
+	"gameVersion": "1.12.2",
 	"dependsOn": {
 		"BSIPA": "^4.0.5",
-		"BeatSaberMarkupLanguage": "^1.4.0"
+		"BeatSaberMarkupLanguage": "^1.4.0",
+		"BS Utils": "^1.6.0",
+		"SiraUtil": "^2.1.0"
 	},
-  "features": []
+	"features": [],
+	"loadAfter": [
+		"Counters+",
+		"ScoreSaber"
+	]
 }

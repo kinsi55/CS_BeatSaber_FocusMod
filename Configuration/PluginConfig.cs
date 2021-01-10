@@ -6,10 +6,14 @@ namespace FocusMod.Configuration {
 	internal class PluginConfig {
 		public static PluginConfig Instance { get; set; }
 
-		public virtual float MinimumDowntime { get; set; } = 3f;
 		public virtual float LeadTime { get; set; } = 1.5f;
+		public virtual float MinimumDisplaytime { get; set; } = 0.5f;
+		public virtual int MinimumNjs { get; set; } = 14;
+		public virtual bool HideOnlyInHMD { get; set; } = true;
+
 		public virtual bool IgnoreWalls { get; set; } = false;
 		public virtual bool IgnoreBombs { get; set; } = false;
+		public virtual bool HideAll { get; set; } = false;
 
 		/// <summary>
 		/// This is called whenever BSIPA reads the config from disk (including when file changes are detected).

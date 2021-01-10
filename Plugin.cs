@@ -10,6 +10,8 @@ using UnityEngine;
 using IPALogger = IPA.Logging.Logger;
 using System.Reflection;
 using HarmonyLib;
+using SiraUtil.Zenject;
+using BeatSaberMarkupLanguage.Settings;
 
 namespace FocusMod {
 
@@ -34,27 +36,37 @@ namespace FocusMod {
 
 		#region BSIPA Config
 		[Init]
-		public void InitWithConfig(Config conf)
+		public void InitWithConfig(Config conf, Zenjector zenjector)
 		{
-				Configuration.PluginConfig.Instance = conf.Generated<Configuration.PluginConfig>();
-				Log.Debug("Config loaded");
+			Configuration.PluginConfig.Instance = conf.Generated<Configuration.PluginConfig>();
+			Log.Debug("Config loaded");
+
+			//new GameObject("FocusModController").AddComponent<FocusModController>();
+
+			harmony = new Harmony("Kinsi55.BeatSaber.FocusMod");
+			harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+			zenjector.OnGame<FocusModInstaller>(false)
+				//.Expose<AudioTimeSyncController>()
+				.ShortCircuitForTutorial();
 		}
 		#endregion
 
 		[OnStart]
 		public void OnApplicationStart() {
 			Log.Debug("OnApplicationStart");
-			new GameObject("FocusModController").AddComponent<FocusModController>();
 
-			harmony = new Harmony("Kinsi55.BeatSaber.FocusMod");
-			harmony.PatchAll(Assembly.GetExecutingAssembly());
+			BSMLSettings.instance.AddSettingsMenu("Focus Mod", "FocusMod.Views.settings.bsml", Configuration.PluginConfig.Instance);
 
-			SceneManager.activeSceneChanged += OnActiveSceneChanged;
+			//SceneManager.activeSceneChanged += OnActiveSceneChanged;
 		}
-		public void OnActiveSceneChanged(Scene oldScene, Scene newScene) {
-			if(newScene.name != "GameCore")
-				FocusModController.Instance.reset();
-		}
+		//public void OnActiveSceneChanged(Scene oldScene, Scene newScene) {
+		//	if(newScene.name == "GameCore") {
+		//		FocusModController.Instance.isInGame();
+		//	} else {
+		//		FocusModController.Instance.reset();
+		//	}
+		//}
 
 		[OnExit]
 		public void OnApplicationQuit() {
