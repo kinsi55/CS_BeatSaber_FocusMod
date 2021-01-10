@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using FocusMod.HarmonyPatches;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,10 +12,10 @@ using Zenject;
 namespace FocusMod {
 	class FocusMod : IInitializable, ITickable {
 
-		static int HiddenHudLayer = 30;
-
-		//GameObject scoreElement = null;
-		IEnumerable<GameObject> elementsToHide = null;
+		static int HiddenHudLayer = 23;
+		
+		IEnumerable<GameObject> elementsToDisable;
+		IEnumerable<GameObject> elementsToHide;
 
 		[Inject] private AudioTimeSyncController audioTimeSyncController = null;
 
@@ -34,26 +35,59 @@ namespace FocusMod {
 		List<SafeTimespan> visibleTimespans = new List<SafeTimespan>(128);
 
 		void getElements() {
-			var _scoreElement =
-				Resources.FindObjectsOfTypeAll<ImmediateRankUIPanel>().LastOrDefault()?.gameObject ??
-				Resources.FindObjectsOfTypeAll<ScoreUIController>().LastOrDefault()?.gameObject;
+
+			/*
+			 * Unforunately, when using Counters+ it is not possible to change the layer of specific counter objects
+			 * because, apparently...
+			 * 
+			 * Kyle 1413 : it's cause the canvas is the only thing actually being rendered i assume
+			 * Kyle 1413 : so changing the layer of just the text doesn't do anything since it's not being rendered in the first place
+			 * 
+			 * so... When using Counters+, having HideAll disabled and HideOnlyInHMD enabled is not possible and it will instead
+			 * resort to disabling the score object entirely
+			 */
+
+			var counterHud = Resources.FindObjectsOfTypeAll<Canvas>().Where(xd => xd.transform.childCount != 0 && xd.name.StartsWith("Counters+ | ") && xd.isActiveAndEnabled).LastOrDefault();
+
+			elementsToDisable = elementsToHide = new GameObject[] { };
 
 			if(!Configuration.PluginConfig.Instance.HideAll) {
-				elementsToHide = new GameObject[] { _scoreElement };
+				var _scoreElement =
+					Resources.FindObjectsOfTypeAll<ImmediateRankUIPanel>().LastOrDefault()?.gameObject ??
+					Resources.FindObjectsOfTypeAll<ScoreUIController>().LastOrDefault()?.gameObject;
+
+				if(counterHud == null) {
+					elementsToHide = new GameObject[] { _scoreElement };
+				} else {
+					elementsToDisable = new GameObject[] {
+						_scoreElement,
+						counterHud?.transform.Cast<Transform>().Where(x => x.gameObject?.name == "ScoreText").LastOrDefault()?.gameObject
+					};
+				}
 				return;
-			}
-
-			// Hard to read but compact code is nice
-			var idk = Resources.FindObjectsOfTypeAll<Canvas>().Where(xd => xd.transform.childCount != 0 && xd.name.StartsWith("Counters+ | ") == true).LastOrDefault();
-
-			elementsToHide = new IEnumerable<GameObject>[] {
-				idk?.transform.Cast<Transform>().Select(x => x.gameObject) ?? new GameObject[]{ },
-				new GameObject[] {
-					_scoreElement,
+			} else {
+				elementsToHide = new GameObject[] {
+					counterHud?.gameObject,
+					//_scoreElement,
 					Resources.FindObjectsOfTypeAll<ComboUIController>().LastOrDefault()?.gameObject,
 					Resources.FindObjectsOfTypeAll<ScoreMultiplierUIController>().LastOrDefault()?.gameObject
-				}.Where(x => x != null)
-			}.SelectMany(x => x).Where(x => x.activeSelf);
+				};
+			}
+
+			elementsToHide = elementsToHide.Where(x => x?.activeSelf == true);
+			elementsToDisable = elementsToDisable.Where(x => x?.activeSelf == true);
+
+			// Hard to read but compact code is nice
+
+			//elementsToHide = new IEnumerable<GameObject>[] {
+			//	//idk?.transform.Cast<Transform>().Select(x => x.gameObject) ?? new GameObject[]{ },
+			//	new GameObject[] {
+			//		counterHud?.gameObject,
+			//		_scoreElement,
+			//		Resources.FindObjectsOfTypeAll<ComboUIController>().LastOrDefault()?.gameObject,
+			//		Resources.FindObjectsOfTypeAll<ScoreMultiplierUIController>().LastOrDefault()?.gameObject
+			//	}.Where(x => x != null)
+			//}.SelectMany(x => x).Where(x => x.activeSelf);
 
 			/*
 			 * I was going to exclude things like the song progress but with Counters+ that isnt really 
@@ -117,7 +151,8 @@ namespace FocusMod {
 			foreach(var x in visibleTimespans)
 				Plugin.Log.Notice(String.Format("{0} - {1}", x.start, x.end));
 			
-			Plugin.Log.Notice(String.Format("Elements to hide: {0}", elementsToHide));
+			Plugin.Log.Notice(String.Format("Elements to hide: {0}", elementsToHide.Join(x => x.name, ", ")));
+			Plugin.Log.Notice(String.Format("Elements to disable: {0}", elementsToDisable.Join(x => x.name, ", ")));
 #endif
 		}
 
@@ -126,9 +161,8 @@ namespace FocusMod {
 			if(Configuration.PluginConfig.Instance.LeadTime == 0f)
 				return;
 
-			var beatMap = BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.difficultyBeatmap;
-
-			if(beatMap.noteJumpMovementSpeed < Configuration.PluginConfig.Instance.MinimumNjs)
+			if(Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed > 0 && 
+				Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed < Configuration.PluginConfig.Instance.MinimumNjs)
 				return;
 
 			ReplayPlayer = AccessTools.TypeByName("ScoreSaber.ReplayPlayer");
@@ -142,18 +176,18 @@ namespace FocusMod {
 
 			getElements();
 
-			parseSong(beatMap.beatmapData.beatmapLinesData);
+			parseSong(Leveldatahook.difficultyBeatmap.beatmapData.beatmapLinesData);
 
-			foreach(var cam in Camera.allCameras) {
-				if(cam.name == "MainCamera") // This' the VR cam, we do not want to unhide the hud on it
-					continue;
+			//foreach(var cam in Camera.allCameras) {
+			//	if(cam.name == "MainCamera") // This' the VR cam, we do not want to unhide the hud on it
+			//		continue;
 
-				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD) {
-					cam.cullingMask &= ~(1 << HiddenHudLayer);
-				} else {
-					cam.cullingMask |= 1 << HiddenHudLayer;
-				}
+			if(!Configuration.PluginConfig.Instance.HideOnlyInHMD) {
+				Camera.main.cullingMask &= ~(1 << HiddenHudLayer);
+			} else {
+				Camera.main.cullingMask |= 1 << HiddenHudLayer;
 			}
+			//}
 		}
 
 		byte checkInterval = 0;
@@ -162,18 +196,24 @@ namespace FocusMod {
 		private void setHudVisibility(bool visible) {
 			foreach(var elem in elementsToHide)
 				elem.layer = visible ? 5 : HiddenHudLayer;
+
+			foreach(var elem in elementsToDisable)
+				elem.SetActive(visible);
 		}
 
 		public void Tick() {
-			if(elementsToHide == null || audioTimeSyncController == null)
+			if(elementsToHide == null || elementsToDisable == null || audioTimeSyncController == null)
 				return;
 
 			// No need to do the check every frame
-			if(checkInterval++ % 3 != 0)
+			if(!(!isVisible && Pausehook.isPaused) && checkInterval++ % 3 != 0)
+				return;
+
+			if(isVisible && Pausehook.isPaused)
 				return;
 
 			foreach(var x in visibleTimespans) {
-				if(x.start <= audioTimeSyncController.songTime && x.end >= audioTimeSyncController.songTime) {
+				if(Pausehook.isPaused || x.start <= audioTimeSyncController.songTime && x.end >= audioTimeSyncController.songTime) {
 					if(!isVisible) {
 						setHudVisibility(true);
 

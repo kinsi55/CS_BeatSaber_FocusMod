@@ -10,6 +10,7 @@ namespace FocusMod.Configuration {
 		public virtual float MinimumDisplaytime { get; set; } = 0.5f;
 		public virtual int MinimumNjs { get; set; } = 14;
 		public virtual bool HideOnlyInHMD { get; set; } = true;
+		public virtual bool UnhideInPause { get; set; } = false;
 
 		public virtual bool IgnoreWalls { get; set; } = false;
 		public virtual bool IgnoreBombs { get; set; } = false;

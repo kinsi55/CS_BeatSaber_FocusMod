@@ -52,9 +52,6 @@
     <Reference Include="BSML">
       <HintPath>E:\SteamLibrary\steamapps\common\Beat Saber\Plugins\BSML.dll</HintPath>
     </Reference>
-    <Reference Include="BS_Utils">
-      <HintPath>E:\SteamLibrary\steamapps\common\Beat Saber\Plugins\BS_Utils.dll</HintPath>
-    </Reference>
     <Reference Include="SiraUtil">
       <HintPath>E:\SteamLibrary\steamapps\common\Beat Saber\Plugins\SiraUtil.dll</HintPath>
     </Reference>
@@ -118,9 +115,10 @@
   <ItemGroup>
     <Compile Include="FocusMod.cs" />
     <Compile Include="FocusModInstaller.cs" />
+    <Compile Include="HarmonyPatches\Leveldatahook.cs" />
+    <Compile Include="HarmonyPatches\Pausehook.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Configuration\PluginConfig.cs" />
-    <Compile Include="FocusModController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

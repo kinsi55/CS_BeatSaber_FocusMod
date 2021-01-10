@@ -8,9 +8,6 @@
 	<horizontal horizontal-fit="PreferredSize" hover-hint="Disable on songs with low NJS">
 		<slider-setting apply-on-change="true" value="MinimumNjs" text="Minimum NJS" min="0" max="24" integer-only="true"></slider-setting>
 	</horizontal>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the HUD only in VR, keep it visible on the Desktop">
-		<checkbox-setting apply-on-change="true" value="HideOnlyInHMD" text="Hide only in VR"></checkbox-setting>
-	</horizontal>
 	
 	<horizontal horizontal-fit="PreferredSize" hover-hint="Should walls in the middle two lines cause the the HUD to hide?">
 		<checkbox-setting apply-on-change="true" value="IgnoreWalls" text="Ignore Walls"></checkbox-setting>
@@ -18,7 +15,18 @@
 	<horizontal horizontal-fit="PreferredSize" hover-hint="Should bombs cause the the HUD to hide?">
 		<checkbox-setting apply-on-change="true" value="IgnoreBombs" text="Ignore Bombs"></checkbox-setting>
 	</horizontal>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the entire hud, not just Score">
-		<checkbox-setting apply-on-change="true" value="HideAll" text="Hide everything"></checkbox-setting>
+	<horizontal horizontal-fit="PreferredSize" hover-hint="Unhides the HUD when paused (Beware of pause tax!)">
+		<checkbox-setting apply-on-change="true" value="UnhideInPause" text="Unhide in pause"></checkbox-setting>
 	</horizontal>
+
+	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the entire hud, not just Score">
+		<checkbox-setting apply-on-change="true" value="HideAll" text="Hide everything *"></checkbox-setting>
+	</horizontal>
+	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the HUD only in VR, keep it visible on the Desktop">
+		<checkbox-setting apply-on-change="true" value="HideOnlyInHMD" text="Hide only in VR *"></checkbox-setting>
+	</horizontal>
+	<horizontal preferred-width="90">
+		<text text="* When Counters+ is active, hiding the HUD only in VR is only possible when you also hide everything" align="Left" word-wrapping="true" color="#CCC" font-size="3"></text>
+	</horizontal>
+	
 </settings-container>
