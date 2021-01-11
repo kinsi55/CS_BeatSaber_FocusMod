@@ -47,7 +47,7 @@ namespace FocusMod {
 			 * resort to disabling the score object entirely
 			 */
 
-			var counterHud = Resources.FindObjectsOfTypeAll<Canvas>().Where(xd => xd.transform.childCount != 0 && xd.name.StartsWith("Counters+ | ") && xd.isActiveAndEnabled).LastOrDefault();
+			var counterHud = Resources.FindObjectsOfTypeAll<Canvas>().FirstOrDefault(xd => xd.transform.childCount != 0 && xd.name.StartsWith("Counters+ | ") && xd.isActiveAndEnabled);
 
 			elementsToDisable = elementsToHide = new GameObject[] { };
 
@@ -61,17 +61,19 @@ namespace FocusMod {
 				} else {
 					elementsToDisable = new GameObject[] {
 						_scoreElement,
-						counterHud?.transform.Cast<Transform>().Where(x => x.gameObject?.name == "ScoreText").LastOrDefault()?.gameObject
+						counterHud?.transform.Cast<Transform>().FirstOrDefault(x => x.gameObject?.name == "ScoreText")?.gameObject
 					};
 				}
 				return;
 			} else {
 				elementsToHide = new GameObject[] {
-					counterHud?.gameObject,
 					//_scoreElement,
-					Resources.FindObjectsOfTypeAll<ComboUIController>().LastOrDefault()?.gameObject,
+					counterHud?.gameObject,
 					Resources.FindObjectsOfTypeAll<ScoreMultiplierUIController>().LastOrDefault()?.gameObject
-				};
+				}.Concat(
+					// Combo panel has sub canvas' which would not hide otherwise
+					Resources.FindObjectsOfTypeAll<ComboUIController>().LastOrDefault()?.GetComponentsInChildren<Canvas>().Select(x => x.gameObject)
+				);
 			}
 
 			elementsToHide = elementsToHide.Where(x => x?.activeSelf == true);
