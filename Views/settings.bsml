@@ -1,6 +1,6 @@
 ﻿<settings-container>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the HUD when notes are about to approach within this amount of seconds (0 = Off)">
-		<slider-setting apply-on-change="true" value="LeadTime" text="Lead time" min="0" max="5" increment="0.1"></slider-setting>
+	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the HUD when notes are about to approach within this amount of seconds">
+		<slider-setting apply-on-change="true" value="LeadTime" text="Lead time (0 = Off)" min="0" max="5" increment="0.1"></slider-setting>
 	</horizontal>
 	<horizontal horizontal-fit="PreferredSize" hover-hint="Dont show the HUD if it would only be visible for less than this amount of seconds">
 		<slider-setting apply-on-change="true" value="MinimumDisplaytime" text="Minimum display time" min="0" max="2" increment="0.1"></slider-setting>

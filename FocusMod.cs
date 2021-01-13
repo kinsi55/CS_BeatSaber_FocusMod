@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Zenject;
 
 namespace FocusMod {
@@ -51,11 +52,11 @@ namespace FocusMod {
 
 			elementsToDisable = elementsToHide = new GameObject[] { };
 
-			if(!Configuration.PluginConfig.Instance.HideAll) {
-				var _scoreElement =
-					Resources.FindObjectsOfTypeAll<ImmediateRankUIPanel>().LastOrDefault()?.gameObject ??
-					Resources.FindObjectsOfTypeAll<ScoreUIController>().LastOrDefault()?.gameObject;
+			var _scoreElement =
+				Resources.FindObjectsOfTypeAll<ImmediateRankUIPanel>().LastOrDefault()?.gameObject ??
+				Resources.FindObjectsOfTypeAll<ScoreUIController>().LastOrDefault()?.gameObject;
 
+			if(!Configuration.PluginConfig.Instance.HideAll) {
 				if(counterHud == null) {
 					elementsToHide = new GameObject[] { _scoreElement };
 				} else {
@@ -67,7 +68,7 @@ namespace FocusMod {
 				return;
 			} else {
 				elementsToHide = new GameObject[] {
-					//_scoreElement,
+					_scoreElement,
 					counterHud?.gameObject,
 					Resources.FindObjectsOfTypeAll<ScoreMultiplierUIController>().LastOrDefault()?.gameObject
 				}.Concat(
@@ -180,16 +181,16 @@ namespace FocusMod {
 
 			parseSong(Leveldatahook.difficultyBeatmap.beatmapData.beatmapLinesData);
 
-			//foreach(var cam in Camera.allCameras) {
-			//	if(cam.name == "MainCamera") // This' the VR cam, we do not want to unhide the hud on it
-			//		continue;
+			foreach(var cam in Camera.allCameras) {
+				if(cam.name == "MainCamera") // This' the VR cam, we do not want to unhide the hud on it
+					continue;
 
-			if(!Configuration.PluginConfig.Instance.HideOnlyInHMD) {
-				Camera.main.cullingMask &= ~(1 << HiddenHudLayer);
-			} else {
-				Camera.main.cullingMask |= 1 << HiddenHudLayer;
+				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD) {
+						cam.cullingMask &= ~(1 << HiddenHudLayer);
+				} else {
+						cam.cullingMask |= 1 << HiddenHudLayer;
+				}
 			}
-			//}
 		}
 
 		byte checkInterval = 0;
@@ -207,15 +208,17 @@ namespace FocusMod {
 			if(elementsToHide == null || elementsToDisable == null || audioTimeSyncController == null)
 				return;
 
+			var _isPaused = Pausehook.isPaused && Configuration.PluginConfig.Instance.UnhideInPause;
+
 			// No need to do the check every frame
-			if(!(!isVisible && Pausehook.isPaused) && checkInterval++ % 3 != 0)
+			if(!(!isVisible && _isPaused) && checkInterval++ % 3 != 0)
 				return;
 
-			if(isVisible && Pausehook.isPaused)
+			if(isVisible && _isPaused)
 				return;
 
 			foreach(var x in visibleTimespans) {
-				if(Pausehook.isPaused || x.start <= audioTimeSyncController.songTime && x.end >= audioTimeSyncController.songTime) {
+				if(_isPaused || x.start <= audioTimeSyncController.songTime && x.end >= audioTimeSyncController.songTime) {
 					if(!isVisible) {
 						setHudVisibility(true);
 
