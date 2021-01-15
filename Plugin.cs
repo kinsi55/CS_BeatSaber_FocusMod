@@ -46,8 +46,9 @@ namespace FocusMod {
 			harmony = new Harmony("Kinsi55.BeatSaber.FocusMod");
 			harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-			zenjector.OnGame<FocusModInstaller>(false)
-				//.Expose<AudioTimeSyncController>()
+            zenjector.OnGame<FocusModInstaller>()
+                //.Expose<AudioTimeSyncController>()
+                .ShortCircuitForMultiplayer()
 				.ShortCircuitForTutorial();
 		}
 		#endregion

@@ -181,22 +181,30 @@ namespace FocusMod {
 
 			parseSong(Leveldatahook.difficultyBeatmap.beatmapData.beatmapLinesData);
 
-			foreach(var cam in Camera.allCameras) {
-				if(cam.name == "MainCamera") // This' the VR cam, we do not want to unhide the hud on it
-					continue;
+            setCamMask();
+        }
 
-				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD) {
-						cam.cullingMask &= ~(1 << HiddenHudLayer);
-				} else {
-						cam.cullingMask |= 1 << HiddenHudLayer;
-				}
-			}
-		}
+        private void setCamMask() {
+            foreach(var cam in Camera.allCameras) {
+                if(!Configuration.PluginConfig.Instance.HideOnlyInHMD || cam.name == "MainCamera") {
+                    cam.cullingMask &= ~(1 << HiddenHudLayer);
+                } else {
+                    cam.cullingMask |= 1 << HiddenHudLayer;
+                }
+            }
+        }
 
 		byte checkInterval = 0;
 		bool isVisible = true;
 
 		private void setHudVisibility(bool visible) {
+            /*
+             * Lets make sure this is REALLY set so its not possibly overwritten by something like Cam+
+             * Kinda ugly but it is what it isss
+             */
+            if(!visible)
+                setCamMask();
+
 			foreach(var elem in elementsToHide)
 				elem.layer = visible ? 5 : HiddenHudLayer;
 
