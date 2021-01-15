@@ -14,7 +14,7 @@ namespace FocusMod {
 	class FocusMod : IInitializable, ITickable {
 
 		static int HiddenHudLayer = 23;
-		
+
 		IEnumerable<GameObject> elementsToDisable;
 		IEnumerable<GameObject> elementsToHide;
 
@@ -110,7 +110,8 @@ namespace FocusMod {
 
 			var sortedObjects = beatmapLinesData.SelectMany(x => x.beatmapObjectsData).OrderBy(x => x.time);
 
-			void checkAndAdd(float objectTime, bool isLast = false) {
+			void checkAndAdd(float objectTime, bool isLast = false)
+			{
 				if(isLast || (objectTime - lastObjectTime - Configuration.PluginConfig.Instance.LeadTime >= Configuration.PluginConfig.Instance.MinimumDisplaytime))
 					visibleTimespans.Add(new SafeTimespan(
 						lastObjectTime,
@@ -164,7 +165,7 @@ namespace FocusMod {
 			if(Configuration.PluginConfig.Instance.LeadTime == 0f)
 				return;
 
-			if(Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed > 0 && 
+			if(Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed > 0 &&
 				Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed < Configuration.PluginConfig.Instance.MinimumNjs)
 				return;
 
@@ -181,14 +182,15 @@ namespace FocusMod {
 
 			parseSong(Leveldatahook.difficultyBeatmap.beatmapData.beatmapLinesData);
 
-			foreach(var cam in Camera.allCameras) {
-				if(cam.name == "MainCamera") // This' the VR cam, we do not want to unhide the hud on it
-					continue;
+			setCamMask();
+		}
 
-				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD) {
-						cam.cullingMask &= ~(1 << HiddenHudLayer);
+		private void setCamMask() {
+			foreach(var cam in Camera.allCameras) {
+				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD || cam.name == "MainCamera") {
+					cam.cullingMask &= ~(1 << HiddenHudLayer);
 				} else {
-						cam.cullingMask |= 1 << HiddenHudLayer;
+					cam.cullingMask |= 1 << HiddenHudLayer;
 				}
 			}
 		}
@@ -197,6 +199,13 @@ namespace FocusMod {
 		bool isVisible = true;
 
 		private void setHudVisibility(bool visible) {
+			/*
+			 * Lets make sure this is REALLY set so its not possibly overwritten by something like Cam+
+			 * Kinda ugly but it is what it isss
+			 */
+			if(!visible)
+				setCamMask();
+
 			foreach(var elem in elementsToHide)
 				elem.layer = visible ? 5 : HiddenHudLayer;
 

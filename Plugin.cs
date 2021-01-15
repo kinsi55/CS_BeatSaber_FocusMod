@@ -36,8 +36,7 @@ namespace FocusMod {
 
 		#region BSIPA Config
 		[Init]
-		public void InitWithConfig(Config conf, Zenjector zenjector)
-		{
+		public void InitWithConfig(Config conf, Zenjector zenjector) {
 			Configuration.PluginConfig.Instance = conf.Generated<Configuration.PluginConfig>();
 			Log.Debug("Config loaded");
 
@@ -46,8 +45,9 @@ namespace FocusMod {
 			harmony = new Harmony("Kinsi55.BeatSaber.FocusMod");
 			harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-			zenjector.OnGame<FocusModInstaller>(false)
+			zenjector.OnGame<FocusModInstaller>()
 				//.Expose<AudioTimeSyncController>()
+				.ShortCircuitForMultiplayer()
 				.ShortCircuitForTutorial();
 		}
 		#endregion
