@@ -186,7 +186,7 @@ namespace FocusMod {
 		}
 
 		private void setCamMask() {
-			foreach(var cam in Camera.allCameras) {
+			foreach(var cam in Resources.FindObjectsOfTypeAll<Camera>()) {
 				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD || cam.name == "MainCamera") {
 					cam.cullingMask &= ~(1 << HiddenHudLayer);
 				} else {
