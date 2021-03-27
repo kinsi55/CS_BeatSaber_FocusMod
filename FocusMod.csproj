@@ -52,6 +52,9 @@
     <Reference Include="BSML">
       <HintPath>E:\SteamLibrary\steamapps\common\Beat Saber\Plugins\BSML.dll</HintPath>
     </Reference>
+    <Reference Include="LIV">
+      <HintPath>E:\SteamLibrary\steamapps\common\Beat Saber\Beat Saber_Data\Managed\LIV.dll</HintPath>
+    </Reference>
     <Reference Include="SiraUtil">
       <HintPath>E:\SteamLibrary\steamapps\common\Beat Saber\Plugins\SiraUtil.dll</HintPath>
     </Reference>

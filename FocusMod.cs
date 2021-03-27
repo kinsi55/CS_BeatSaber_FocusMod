@@ -20,8 +20,9 @@ namespace FocusMod {
 
 		[Inject] private AudioTimeSyncController audioTimeSyncController = null;
 
-		Type ReplayPlayer = null;
-		PropertyInfo ReplayPlayer_playbackEnabled = null;
+		static Type ReplayPlayer = AccessTools.TypeByName("ScoreSaber.ReplayPlayer");
+		static PropertyInfo ReplayPlayer_playbackEnabled = ReplayPlayer?.GetProperty("playbackEnabled", BindingFlags.Public | BindingFlags.Instance);
+		static FieldInfo ReplayPlayer_instance = ReplayPlayer?.GetField("instance", BindingFlags.Public | BindingFlags.Static);
 
 		struct SafeTimespan {
 			public float start;
@@ -169,10 +170,8 @@ namespace FocusMod {
 				Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed < Configuration.PluginConfig.Instance.MinimumNjs)
 				return;
 
-			ReplayPlayer = AccessTools.TypeByName("ScoreSaber.ReplayPlayer");
-			ReplayPlayer_playbackEnabled = ReplayPlayer?.GetProperty("playbackEnabled", BindingFlags.Public | BindingFlags.Instance);
-			if(ReplayPlayer != null && ReplayPlayer_playbackEnabled != null) {
-				var x = ((MonoBehaviour)Resources.FindObjectsOfTypeAll(ReplayPlayer).LastOrDefault());
+			if(ReplayPlayer_playbackEnabled != null && ReplayPlayer_instance != null) {
+				var x = (MonoBehaviour)ReplayPlayer_instance.GetValue(null);
 
 				if(x?.isActiveAndEnabled == true && (bool)ReplayPlayer_playbackEnabled.GetValue(x))
 					return;
@@ -189,6 +188,19 @@ namespace FocusMod {
 			foreach(var cam in Resources.FindObjectsOfTypeAll<Camera>()) {
 				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD || cam.name == "MainCamera") {
 					cam.cullingMask &= ~(1 << HiddenHudLayer);
+
+					if(cam.name != "MainCamera")
+						continue;
+
+					var x = cam.GetComponent<LIV.SDK.Unity.LIV>();
+
+					if(x != null) {
+						if(Configuration.PluginConfig.Instance.HideOnlyInHMD) {
+							x.SpectatorLayerMask |= 1 << HiddenHudLayer;
+						} else {
+							x.SpectatorLayerMask &= ~(1 << HiddenHudLayer);
+						}
+					}
 				} else {
 					cam.cullingMask |= 1 << HiddenHudLayer;
 				}
