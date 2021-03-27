@@ -14,6 +14,7 @@ namespace FocusMod {
 	class FocusMod : IInitializable, ITickable {
 
 		static int HiddenHudLayer = 23;
+		static int NormalHudLayer = 5;
 
 		IEnumerable<GameObject> elementsToDisable;
 		IEnumerable<GameObject> elementsToHide;
@@ -185,24 +186,21 @@ namespace FocusMod {
 		}
 
 		private void setCamMask() {
+			int hudToggle(int flag, bool show = true) => show ? flag | 1 << HiddenHudLayer : flag & ~(1 << HiddenHudLayer);
+
 			foreach(var cam in Resources.FindObjectsOfTypeAll<Camera>()) {
 				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD || cam.name == "MainCamera") {
-					cam.cullingMask &= ~(1 << HiddenHudLayer);
+					cam.cullingMask = hudToggle(cam.cullingMask, false);
 
 					if(cam.name != "MainCamera")
 						continue;
 
 					var x = cam.GetComponent<LIV.SDK.Unity.LIV>();
 
-					if(x != null) {
-						if(Configuration.PluginConfig.Instance.HideOnlyInHMD) {
-							x.SpectatorLayerMask |= 1 << HiddenHudLayer;
-						} else {
-							x.SpectatorLayerMask &= ~(1 << HiddenHudLayer);
-						}
-					}
+					if(x != null)
+						x.SpectatorLayerMask = hudToggle(x.SpectatorLayerMask, Configuration.PluginConfig.Instance.HideOnlyInHMD);
 				} else {
-					cam.cullingMask |= 1 << HiddenHudLayer;
+					cam.cullingMask = hudToggle(cam.cullingMask, (cam.cullingMask & (1 << NormalHudLayer)) != 0);
 				}
 			}
 		}
