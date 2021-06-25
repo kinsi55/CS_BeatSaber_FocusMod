@@ -21,9 +21,7 @@ namespace FocusMod {
 
 		[Inject] private AudioTimeSyncController audioTimeSyncController = null;
 
-		static Type ReplayPlayer = AccessTools.TypeByName("ScoreSaber.ReplayPlayer");
-		static PropertyInfo ReplayPlayer_playbackEnabled = ReplayPlayer?.GetProperty("playbackEnabled", BindingFlags.Public | BindingFlags.Instance);
-		static FieldInfo ReplayPlayer_instance = ReplayPlayer?.GetField("instance", BindingFlags.Public | BindingFlags.Static);
+		static MethodBase ScoreSaber_playbackEnabled = AccessTools.Method("ScoreSaber.Core.ReplaySystem.HarmonyPatches.PatchHandleHMDUnmounted:Prefix");
 
 		struct SafeTimespan {
 			public float start;
@@ -171,12 +169,8 @@ namespace FocusMod {
 				Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed < Configuration.PluginConfig.Instance.MinimumNjs)
 				return;
 
-			if(ReplayPlayer_playbackEnabled != null && ReplayPlayer_instance != null) {
-				var x = (MonoBehaviour)ReplayPlayer_instance.GetValue(null);
-
-				if(x?.isActiveAndEnabled == true && (bool)ReplayPlayer_playbackEnabled.GetValue(x))
-					return;
-			}
+			if(ScoreSaber_playbackEnabled != null && (bool)ScoreSaber_playbackEnabled.Invoke(null, null) == false)
+				return;
 
 			getElements();
 
