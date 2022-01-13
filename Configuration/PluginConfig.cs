@@ -1,8 +1,8 @@
-﻿using System.Runtime.CompilerServices;
-using IPA.Config.Stores;
+﻿using IPA.Config.Stores;
+using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo(GeneratedStore.AssemblyVisibilityTarget)]
-namespace FocusMod.Configuration {
+namespace FocusMod {
 	internal class PluginConfig {
 		public static PluginConfig Instance { get; set; }
 

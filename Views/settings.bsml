@@ -1,32 +1,12 @@
 ﻿<settings-container>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the HUD when notes are about to approach within this amount of seconds">
-		<slider-setting apply-on-change="true" value="LeadTime" text="Lead time (0 = Off)" min="0" max="5" increment="0.1"></slider-setting>
-	</horizontal>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Dont show the HUD if it would only be visible for less than this amount of seconds">
-		<slider-setting apply-on-change="true" value="MinimumDisplaytime" text="Minimum display time" min="0" max="2" increment="0.1"></slider-setting>
-	</horizontal>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Disable on songs with low NJS">
-		<slider-setting apply-on-change="true" value="MinimumNjs" text="Minimum NJS" min="0" max="24" integer-only="true"></slider-setting>
-	</horizontal>
+	<slider-setting apply-on-change="true" value="LeadTime" text="Lead time (0 = Off)" min="0" max="5" increment="0.1" hover-hint="Hide the HUD when notes are about to approach within this amount of seconds"/>
+	<slider-setting apply-on-change="true" value="MinimumDisplaytime" text="Minimum display time" min="0" max="2" increment="0.1" hover-hint="Dont show the HUD if it would only be visible for less than this amount of seconds"/>
+	<slider-setting apply-on-change="true" value="MinimumNjs" text="Minimum NJS" min="0" max="24" integer-only="true" hover-hint="Disable on songs with low NJS"/>
 	
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Should walls in the middle two lines cause the the HUD to hide?">
-		<checkbox-setting apply-on-change="true" value="IgnoreWalls" text="Ignore Walls"></checkbox-setting>
-	</horizontal>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Should bombs cause the the HUD to hide?">
-		<checkbox-setting apply-on-change="true" value="IgnoreBombs" text="Ignore Bombs"></checkbox-setting>
-	</horizontal>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Unhides the HUD when paused (Beware of pause tax!)">
-		<checkbox-setting apply-on-change="true" value="UnhideInPause" text="Unhide in pause"></checkbox-setting>
-	</horizontal>
+	<checkbox-setting apply-on-change="true" value="IgnoreWalls" text="Ignore Walls" hover-hint="Should walls in the middle two lines cause the the HUD to hide?"/>
+	<checkbox-setting apply-on-change="true" value="IgnoreBombs" text="Ignore Bombs" hover-hint="Should bombs cause the the HUD to hide?"/>
+	<checkbox-setting apply-on-change="true" value="UnhideInPause" text="Unhide in pause" hover-hint="Unhides the HUD when paused (Beware of pause tax!)"/>
 
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the entire hud, not just Score">
-		<checkbox-setting apply-on-change="true" value="HideAll" text="Hide everything *"></checkbox-setting>
-	</horizontal>
-	<horizontal horizontal-fit="PreferredSize" hover-hint="Hide the HUD only in VR, keep it visible on the Desktop">
-		<checkbox-setting apply-on-change="true" value="HideOnlyInHMD" text="Hide only in VR *"></checkbox-setting>
-	</horizontal>
-	<horizontal preferred-width="90">
-		<text text="* When Counters+ is active, hiding the HUD only in VR is only possible when you also hide everything" align="Left" word-wrapping="true" color="#CCC" font-size="3"></text>
-	</horizontal>
-	
+	<checkbox-setting apply-on-change="true" value="HideAll" text="Hide everything" hover-hint="Hide the entire hud, not just Score"/>
+	<checkbox-setting apply-on-change="true" value="HideOnlyInHMD" text="Hide only in VR" hover-hint="Hide the HUD only in VR, keep it visible on the Desktop"/>
 </settings-container>

@@ -1,27 +1,30 @@
-﻿using FocusMod.HarmonyPatches;
-using HarmonyLib;
-using System;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UIElements;
 using Zenject;
 
 namespace FocusMod {
 	class FocusMod : IInitializable, ITickable {
+		const int HiddenHudLayer = 23;
+		const int NormalHudLayer = 5;
 
-		static int HiddenHudLayer = 23;
-		static int NormalHudLayer = 5;
+		GameObject[] elementsToHide;
 
-		IEnumerable<GameObject> elementsToDisable;
-		IEnumerable<GameObject> elementsToHide;
+		readonly AudioTimeSyncController audioTimeSyncController = null;
+		readonly IDifficultyBeatmap difficultyBeatmap = null;
 
-		[Inject] private AudioTimeSyncController audioTimeSyncController = null;
+		public FocusMod(AudioTimeSyncController audioTimeSyncController, IDifficultyBeatmap difficultyBeatmap) {
+			this.audioTimeSyncController = audioTimeSyncController;
+			this.difficultyBeatmap = difficultyBeatmap;
+		}
 
-		static MethodBase ScoreSaber_playbackEnabled = AccessTools.Method("ScoreSaber.Core.ReplaySystem.HarmonyPatches.PatchHandleHMDUnmounted:Prefix");
+		static MethodBase ScoreSaber_playbackEnabled =
+			IPA.Loader.PluginManager.GetPluginFromId("ScoreSaber")?
+			.Assembly.GetType("ScoreSaber.Core.ReplaySystem.HarmonyPatches.PatchHandleHMDUnmounted")?
+			.GetMethod("Prefix", BindingFlags.Static | BindingFlags.NonPublic);
 
 		struct SafeTimespan {
 			public float start;
@@ -33,106 +36,71 @@ namespace FocusMod {
 			}
 		}
 
-		List<SafeTimespan> visibleTimespans = new List<SafeTimespan>(128);
+		int lastTimespanIndex = 0;
+		SafeTimespan[] visibleTimespans;
 
 		void getElements() {
-
-			/*
-			 * Unforunately, when using Counters+ it is not possible to change the layer of specific counter objects
-			 * because, apparently...
-			 * 
-			 * Kyle 1413 : it's cause the canvas is the only thing actually being rendered i assume
-			 * Kyle 1413 : so changing the layer of just the text doesn't do anything since it's not being rendered in the first place
-			 * 
-			 * so... When using Counters+, having HideAll disabled and HideOnlyInHMD enabled is not possible and it will instead
-			 * resort to disabling the score object entirely
-			 */
-
-			var counterHud = Resources.FindObjectsOfTypeAll<Canvas>().FirstOrDefault(xd => xd.transform.childCount != 0 && xd.name.StartsWith("Counters+ | ") && xd.isActiveAndEnabled);
-
-			elementsToDisable = elementsToHide = new GameObject[] { };
+			var counterHuds = UnityEngine.Object.FindObjectsOfType<Canvas>()
+				.Where(xd => xd.transform.childCount != 0 && xd.name.StartsWith("Counters+ | ", StringComparison.Ordinal))
+				.Select(x => x.gameObject)
+				.ToArray();
 
 			var _scoreElement =
-				Resources.FindObjectsOfTypeAll<ImmediateRankUIPanel>().LastOrDefault()?.gameObject ??
-				Resources.FindObjectsOfTypeAll<ScoreUIController>().LastOrDefault()?.gameObject;
+				UnityEngine.Object.FindObjectOfType<ImmediateRankUIPanel>()?.gameObject ??
+				UnityEngine.Object.FindObjectOfType<ScoreUIController>()?.gameObject;
 
-			if(!Configuration.PluginConfig.Instance.HideAll) {
-				if(counterHud == null) {
-					elementsToHide = new GameObject[] { _scoreElement };
-				} else {
-					elementsToDisable = new GameObject[] {
-						_scoreElement,
-						counterHud?.transform.Cast<Transform>().FirstOrDefault(x => x.gameObject?.name == "ScoreText")?.gameObject
-					};
-				}
-				return;
+			if(!PluginConfig.Instance.HideAll) {
+				if(!_scoreElement.GetComponent<Canvas>())
+					_scoreElement.AddComponent<Canvas>();
+
+				elementsToHide = new GameObject[] { _scoreElement };
 			} else {
 				elementsToHide = new GameObject[] {
 					_scoreElement,
-					counterHud?.gameObject,
-					Resources.FindObjectsOfTypeAll<ScoreMultiplierUIController>().LastOrDefault()?.gameObject
-				}.Concat(
+					UnityEngine.Object.FindObjectOfType<ScoreMultiplierUIController>()?.gameObject
+				}
+				.Concat(counterHuds)
+				.Concat(
 					// Combo panel has sub canvas' which would not hide otherwise
-					Resources.FindObjectsOfTypeAll<ComboUIController>().LastOrDefault()?.GetComponentsInChildren<Canvas>().Select(x => x.gameObject)
-				);
+					UnityEngine.Object.FindObjectOfType<ComboUIController>()?.GetComponentsInChildren<Canvas>().Select(x => x.gameObject)
+				).ToArray();
 			}
 
-			elementsToHide = elementsToHide.Where(x => x?.activeSelf == true);
-			elementsToDisable = elementsToDisable.Where(x => x?.activeSelf == true);
-
-			// Hard to read but compact code is nice
-
-			//elementsToHide = new IEnumerable<GameObject>[] {
-			//	//idk?.transform.Cast<Transform>().Select(x => x.gameObject) ?? new GameObject[]{ },
-			//	new GameObject[] {
-			//		counterHud?.gameObject,
-			//		_scoreElement,
-			//		Resources.FindObjectsOfTypeAll<ComboUIController>().LastOrDefault()?.gameObject,
-			//		Resources.FindObjectsOfTypeAll<ScoreMultiplierUIController>().LastOrDefault()?.gameObject
-			//	}.Where(x => x != null)
-			//}.SelectMany(x => x).Where(x => x.activeSelf);
-
-			/*
-			 * I was going to exclude things like the song progress but with Counters+ that isnt really 
-			 * possible in an easy fashion because almost everything created by C+ is just a textmesh and
-			 * theres no nesting so I'll just hide EVERYTHING for now except the health. I'd probably have
-			 * to find a better way to look up the C+ objects
-			 */
-			//string[] elementsToNotHide = {
-			//	"SongProgressCanvas"
-			//};
-
-			//elementsToHide = elementsToHide.Where(x => !elementsToNotHide.Any(y => y == x.name));
+			elementsToHide = elementsToHide.Where(x => x?.activeSelf == true).ToArray();
 		}
 
-		void parseSong(IReadOnlyList<IReadonlyBeatmapLineData> beatmapLinesData) {
+		void ParseMap(IReadOnlyList<IReadonlyBeatmapLineData> beatmapLinesData) {
 			float lastObjectTime = 0f;
 
 			var sortedObjects = beatmapLinesData.SelectMany(x => x.beatmapObjectsData).OrderBy(x => x.time);
 
-			void checkAndAdd(float objectTime, bool isLast = false)
-			{
-				if(isLast || (objectTime - lastObjectTime - Configuration.PluginConfig.Instance.LeadTime >= Configuration.PluginConfig.Instance.MinimumDisplaytime))
+			var visibleTimespans = new List<SafeTimespan>();
+
+			void CheckAndAdd(float objectTime, bool isLast = false) {
+				if(isLast || (objectTime - lastObjectTime - PluginConfig.Instance.LeadTime >= PluginConfig.Instance.MinimumDisplaytime))
 					visibleTimespans.Add(new SafeTimespan(
 						lastObjectTime,
-						isLast ? objectTime : objectTime - Configuration.PluginConfig.Instance.LeadTime
+						isLast ? objectTime : objectTime - PluginConfig.Instance.LeadTime
 					));
 
 				lastObjectTime = objectTime;
 			}
 
 			foreach(var beatmapObject in sortedObjects) {
+				if(lastObjectTime == beatmapObject.time)
+					continue;
+
 				if(beatmapObject.beatmapObjectType == BeatmapObjectType.Obstacle) {
-					if(Configuration.PluginConfig.Instance.IgnoreWalls)
+					if(PluginConfig.Instance.IgnoreWalls)
 						continue;
 
-					var obstacle = beatmapObject as ObstacleData;
+					var obstacle = (ObstacleData)beatmapObject;
 
 					if(obstacle.width == 1 && (obstacle.lineIndex == 0 || obstacle.lineIndex == 3))
 						continue;
 				} else if(beatmapObject.beatmapObjectType == BeatmapObjectType.Note) {
-					if(Configuration.PluginConfig.Instance.IgnoreBombs) {
-						var note = beatmapObject as NoteData;
+					if(PluginConfig.Instance.IgnoreBombs) {
+						var note = (NoteData)beatmapObject;
 
 						if(note.colorType == ColorType.None && note.cutDirection == NoteCutDirection.None)
 							continue;
@@ -141,50 +109,46 @@ namespace FocusMod {
 					continue;
 				}
 
-				if(lastObjectTime == beatmapObject.time)
-					continue;
-
-				checkAndAdd(beatmapObject.time);
+				CheckAndAdd(beatmapObject.time);
 			}
 
-			checkAndAdd(audioTimeSyncController.songLength, true);
+			CheckAndAdd(audioTimeSyncController.songLength, true);
 
-#if DEBUG
-			Plugin.Log.Notice("Safe timespans in this song:");
-
-			foreach(var x in visibleTimespans)
-				Plugin.Log.Notice(String.Format("{0} - {1}", x.start, x.end));
-			
-			Plugin.Log.Notice(String.Format("Elements to hide: {0}", elementsToHide.Join(x => x.name, ", ")));
-			Plugin.Log.Notice(String.Format("Elements to disable: {0}", elementsToDisable.Join(x => x.name, ", ")));
-#endif
+			this.visibleTimespans = visibleTimespans.ToArray();
 		}
 
 
 		public void Initialize() {
-			if(Configuration.PluginConfig.Instance.LeadTime == 0f)
+			if(PluginConfig.Instance.LeadTime == 0f)
 				return;
 
-			if(Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed > 0 &&
-				Leveldatahook.difficultyBeatmap.noteJumpMovementSpeed < Configuration.PluginConfig.Instance.MinimumNjs)
+			try {
+				if(ScoreSaber_playbackEnabled != null && !(bool)ScoreSaber_playbackEnabled.Invoke(null, null))
+					return;
+			} catch { }
+
+			var njs = difficultyBeatmap.noteJumpMovementSpeed;
+			if(njs == 0)
+				njs = BeatmapDifficultyMethods.NoteJumpMovementSpeed(difficultyBeatmap.difficulty);
+
+			if(njs < PluginConfig.Instance.MinimumNjs)
 				return;
 
-			if(ScoreSaber_playbackEnabled != null && (bool)ScoreSaber_playbackEnabled.Invoke(null, null) == false)
-				return;
+			ParseMap(difficultyBeatmap.beatmapData.beatmapLinesData);
+
+			SharedCoroutineStarter.instance.StartCoroutine(InitStuff());
+		}
+
+		IEnumerator InitStuff() {
+			yield return null;
 
 			getElements();
 
-			parseSong(Leveldatahook.difficultyBeatmap.beatmapData.beatmapLinesData);
-
-			setCamMask();
-		}
-
-		private void setCamMask() {
-			int hudToggle(int flag, bool show = true) => show ? flag | 1 << HiddenHudLayer : flag & ~(1 << HiddenHudLayer);
+			int HudToggle(int flag, bool show = true) => show ? flag | 1 << HiddenHudLayer : flag & ~(1 << HiddenHudLayer);
 
 			foreach(var cam in Resources.FindObjectsOfTypeAll<Camera>()) {
-				if(!Configuration.PluginConfig.Instance.HideOnlyInHMD || cam.name == "MainCamera") {
-					cam.cullingMask = hudToggle(cam.cullingMask, false);
+				if(!PluginConfig.Instance.HideOnlyInHMD || cam.name == "MainCamera") {
+					cam.cullingMask = HudToggle(cam.cullingMask, false);
 
 					if(cam.name != "MainCamera")
 						continue;
@@ -192,60 +156,70 @@ namespace FocusMod {
 					var x = cam.GetComponent<LIV.SDK.Unity.LIV>();
 
 					if(x != null)
-						x.SpectatorLayerMask = hudToggle(x.SpectatorLayerMask, Configuration.PluginConfig.Instance.HideOnlyInHMD);
+						x.SpectatorLayerMask = HudToggle(x.SpectatorLayerMask, PluginConfig.Instance.HideOnlyInHMD);
 				} else {
-					cam.cullingMask = hudToggle(cam.cullingMask, (cam.cullingMask & (1 << NormalHudLayer)) != 0);
+					cam.cullingMask = HudToggle(cam.cullingMask, (cam.cullingMask & (1 << NormalHudLayer)) != 0);
 				}
 			}
+
+#if DEBUG
+			Plugin.Log.Notice("Safe timespans in this song:");
+
+			foreach(var x in visibleTimespans)
+				Plugin.Log.Notice(string.Format("{0} - {1}", x.start, x.end));
+
+			Plugin.Log.Notice(string.Format("Elements to hide: {0}", elementsToHide.Join(x => x.name, ", ")));
+#endif
 		}
 
-		byte checkInterval = 0;
 		bool isVisible = true;
 
-		private void setHudVisibility(bool visible) {
-			/*
-			 * Lets make sure this is REALLY set so its not possibly overwritten by something like Cam+
-			 * Kinda ugly but it is what it isss
-			 */
-			if(!visible)
-				setCamMask();
+		private void SetHudVisibility(bool visible) {
+			if(isVisible == visible)
+				return;
+
+			isVisible = visible;
 
 			foreach(var elem in elementsToHide)
 				elem.layer = visible ? 5 : HiddenHudLayer;
-
-			foreach(var elem in elementsToDisable)
-				elem.SetActive(visible);
 		}
 
 		public void Tick() {
-			if(elementsToHide == null || elementsToDisable == null || audioTimeSyncController == null)
+			if(elementsToHide == null)
 				return;
 
-			var _isPaused = Pausehook.isPaused && Configuration.PluginConfig.Instance.UnhideInPause;
+			var isPaused = audioTimeSyncController.state != AudioTimeSyncController.State.Playing;
 
-			// No need to do the check every frame
-			if(!(!isVisible && _isPaused) && checkInterval++ % 3 != 0)
+			if(isPaused && isVisible)
 				return;
 
-			if(isVisible && _isPaused)
+			if(lastTimespanIndex >= visibleTimespans.Length)
 				return;
 
-			foreach(var x in visibleTimespans) {
-				if(_isPaused || x.start <= audioTimeSyncController.songTime && x.end >= audioTimeSyncController.songTime) {
-					if(!isVisible) {
-						setHudVisibility(true);
+			// If something rewound the time back we need to find a new start index
+			if(lastTimespanIndex != 0 && audioTimeSyncController.songTime < visibleTimespans[lastTimespanIndex - 1].end)
+				lastTimespanIndex = 0;
 
-						isVisible = true;
-					}
-					return;
+			var intendedVisibility = false;
+
+			for(var i = lastTimespanIndex; i < visibleTimespans.Length; i++) {
+				var ts = visibleTimespans[i];
+
+				if(ts.start > audioTimeSyncController.songTime)
+					break;
+
+				if(ts.end < audioTimeSyncController.songTime) {
+					lastTimespanIndex++;
+					continue;
+				}
+
+				if(ts.start < audioTimeSyncController.songTime) {
+					intendedVisibility = true;
+					break;
 				}
 			}
 
-			if(isVisible) {
-				setHudVisibility(false);
-
-				isVisible = false;
-			}
+			SetHudVisibility(intendedVisibility || (isPaused && PluginConfig.Instance.UnhideInPause));
 		}
 	}
 }

@@ -118,8 +118,6 @@
   <ItemGroup>
     <Compile Include="FocusMod.cs" />
     <Compile Include="FocusModInstaller.cs" />
-    <Compile Include="HarmonyPatches\Leveldatahook.cs" />
-    <Compile Include="HarmonyPatches\Pausehook.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Configuration\PluginConfig.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -142,5 +140,6 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
