@@ -10,7 +10,6 @@
 		"BeatSaberMarkupLanguage": "^1.4.0",
 		"SiraUtil": "^3.0.0"
 	},
-	"features": [],
 	"loadAfter": [
 		"Counters+",
 		"ScoreSaber"
