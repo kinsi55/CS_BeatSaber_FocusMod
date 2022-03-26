@@ -105,6 +105,9 @@ namespace FocusMod {
 
 					CheckAndAdd(Math.Max(sld.tailTime, sld.time));
 				} else {
+					if(PluginConfig.Instance.IgnoreBombs && (beatmapObject as NoteData)?.gameplayType == NoteData.GameplayType.Bomb)
+						continue;
+
 					CheckAndAdd(beatmapObject.time);
 				}
 			}

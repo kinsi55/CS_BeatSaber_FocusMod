@@ -2,7 +2,7 @@
 	"id": "FocusMod",
 	"name": "FocusMod",
 	"author": "Kinsi55",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Stops you from looking at your accuracy when you shouldnt",
 	"gameVersion": "1.19.0",
 	"dependsOn": {
