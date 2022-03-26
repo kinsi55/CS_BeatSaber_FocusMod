@@ -15,10 +15,12 @@ namespace FocusMod {
 
 		readonly AudioTimeSyncController audioTimeSyncController = null;
 		readonly IDifficultyBeatmap difficultyBeatmap = null;
+		readonly IReadonlyBeatmapData beatmapData = null;
 
-		public FocusMod(AudioTimeSyncController audioTimeSyncController, IDifficultyBeatmap difficultyBeatmap) {
+		public FocusMod(AudioTimeSyncController audioTimeSyncController, IDifficultyBeatmap difficultyBeatmap, IReadonlyBeatmapData beatmapData) {
 			this.audioTimeSyncController = audioTimeSyncController;
 			this.difficultyBeatmap = difficultyBeatmap;
+			this.beatmapData = beatmapData;
 		}
 
 		static MethodBase ScoreSaber_playbackEnabled =
@@ -69,10 +71,8 @@ namespace FocusMod {
 			elementsToHide = elementsToHide.Where(x => x?.activeSelf == true).ToArray();
 		}
 
-		void ParseMap(IReadOnlyList<IReadonlyBeatmapLineData> beatmapLinesData) {
+		void ParseMap(IReadonlyBeatmapData beatmapData) {
 			float lastObjectTime = 0f;
-
-			var sortedObjects = beatmapLinesData.SelectMany(x => x.beatmapObjectsData).OrderBy(x => x.time);
 
 			var visibleTimespans = new List<SafeTimespan>();
 
@@ -86,30 +86,27 @@ namespace FocusMod {
 				lastObjectTime = objectTime;
 			}
 
-			foreach(var beatmapObject in sortedObjects) {
+			foreach(var beatmapObject in beatmapData.allBeatmapDataItems) {
+				if(beatmapObject.type != BeatmapDataItem.BeatmapDataItemType.BeatmapObject)
+					continue;
+
 				if(lastObjectTime == beatmapObject.time)
 					continue;
 
-				if(beatmapObject.beatmapObjectType == BeatmapObjectType.Obstacle) {
+				if(beatmapObject is ObstacleData obs) {
 					if(PluginConfig.Instance.IgnoreWalls)
 						continue;
 
-					var obstacle = (ObstacleData)beatmapObject;
-
-					if(obstacle.width == 1 && (obstacle.lineIndex == 0 || obstacle.lineIndex == 3))
+					if(obs.width == 1 && (obs.lineIndex == 0 || obs.lineIndex == 3))
 						continue;
-				} else if(beatmapObject.beatmapObjectType == BeatmapObjectType.Note) {
-					if(PluginConfig.Instance.IgnoreBombs) {
-						var note = (NoteData)beatmapObject;
+				} else if(beatmapObject is SliderData sld) {
+					if(sld.sliderType == SliderData.Type.Normal)
+						continue;
 
-						if(note.colorType == ColorType.None && note.cutDirection == NoteCutDirection.None)
-							continue;
-					}
+					CheckAndAdd(Math.Max(sld.tailTime, sld.time));
 				} else {
-					continue;
+					CheckAndAdd(beatmapObject.time);
 				}
-
-				CheckAndAdd(beatmapObject.time);
 			}
 
 			CheckAndAdd(audioTimeSyncController.songLength, true);
@@ -134,7 +131,7 @@ namespace FocusMod {
 			if(njs < PluginConfig.Instance.MinimumNjs)
 				return;
 
-			ParseMap(difficultyBeatmap.beatmapData.beatmapLinesData);
+			ParseMap(beatmapData);
 
 			SharedCoroutineStarter.instance.StartCoroutine(InitStuff());
 		}
@@ -156,7 +153,7 @@ namespace FocusMod {
 					var x = cam.GetComponent<LIV.SDK.Unity.LIV>();
 
 					if(x != null)
-						x.SpectatorLayerMask = HudToggle(x.SpectatorLayerMask, PluginConfig.Instance.HideOnlyInHMD);
+						x.spectatorLayerMask = HudToggle(x.spectatorLayerMask, PluginConfig.Instance.HideOnlyInHMD);
 				} else {
 					cam.cullingMask = HudToggle(cam.cullingMask, (cam.cullingMask & (1 << NormalHudLayer)) != 0);
 				}
