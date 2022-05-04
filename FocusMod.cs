@@ -149,18 +149,15 @@ namespace FocusMod {
 			foreach(var cam in Resources.FindObjectsOfTypeAll<Camera>()) {
 				if(!PluginConfig.Instance.HideOnlyInHMD || cam.name == "MainCamera") {
 					cam.cullingMask = HudToggle(cam.cullingMask, false);
-
-					if(cam.name != "MainCamera")
-						continue;
-
-					var x = cam.GetComponent<LIV.SDK.Unity.LIV>();
-
-					if(x != null)
-						x.spectatorLayerMask = HudToggle(x.spectatorLayerMask, PluginConfig.Instance.HideOnlyInHMD);
 				} else {
 					cam.cullingMask = HudToggle(cam.cullingMask, (cam.cullingMask & (1 << NormalHudLayer)) != 0);
 				}
 			}
+
+			var LIVTHING = UnityEngine.Object.FindObjectOfType<LIV.SDK.Unity.LIV>();
+
+			if(LIVTHING != null)
+				LIVTHING.spectatorLayerMask = HudToggle(LIVTHING.spectatorLayerMask, PluginConfig.Instance.HideOnlyInHMD);
 
 #if DEBUG
 			Plugin.Log.Notice("Safe timespans in this song:");
