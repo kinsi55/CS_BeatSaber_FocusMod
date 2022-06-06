@@ -64,7 +64,7 @@ namespace FocusMod {
 				.Concat(counterHuds)
 				.Concat(
 					// Combo panel has sub canvas' which would not hide otherwise
-					UnityEngine.Object.FindObjectOfType<ComboUIController>()?.GetComponentsInChildren<Canvas>().Select(x => x.gameObject)
+					UnityEngine.Object.FindObjectOfType<ComboUIController>()?.GetComponentsInChildren<Canvas>().Select(x => x.gameObject) ?? new GameObject[] { }
 				).ToArray();
 			}
 
@@ -165,7 +165,7 @@ namespace FocusMod {
 			foreach(var x in visibleTimespans)
 				Plugin.Log.Notice(string.Format("{0} - {1}", x.start, x.end));
 
-			Plugin.Log.Notice(string.Format("Elements to hide: {0}", elementsToHide.Join(x => x.name, ", ")));
+			Plugin.Log.Notice(string.Format("Elements to hide: {0}", string.Join(", ", elementsToHide.Select(x => x.name))));
 #endif
 		}
 
